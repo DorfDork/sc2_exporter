@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AssetRipper.SharpGLTF.Core" Version="1.0.2" />
+    <PackageReference Include="AssetRipper.SharpGLTF.Runtime" Version="1.0.2" />
+    <PackageReference Include="AssetRipper.SharpGLTF.Toolkit" Version="1.0.2" />
+    <PackageReference Include="NUnit" Version="4.1.0" />
+    <PackageReference Include="OneOf" Version="3.0.263" />
+    <PackageReference Include="SharpGLTF.Core" Version="1.0.0" />
+    <PackageReference Include="SharpGLTF.Ext.3DTiles" Version="1.0.0" />
+    <PackageReference Include="SharpGLTF.Ext.Agi" Version="1.0.0" />
+    <PackageReference Include="SharpGLTF.Runtime" Version="1.0.0" />
+    <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
