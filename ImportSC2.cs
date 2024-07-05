@@ -150,8 +150,8 @@ namespace SC2_3DS
             vmxobject.Object_0 = new LayerObjectEntryXbox[vmxobject.VMXheader.Object0Count];
             vmxobject.Object_1 = new LayerObjectEntryXbox[vmxobject.VMXheader.Object1Count];
             vmxobject.Object_2 = new LayerObjectEntryXbox[vmxobject.VMXheader.Object2Count];
-            vmxobject.SkinnedMeshList = new List<SkinnedMeshXbox>();
-            vmxobject.StaticMeshList = new List<StaticMeshXbox>();
+            vmxobject.SkinnedMeshList = new List<LayerObjectEntryXbox>();
+            vmxobject.StaticMeshList = new List<LayerObjectEntryXbox>();
             int[] TempVertSkinned = new int[3];
             TempVertSkinned[1] = 9001; //Min
             TempVertSkinned[2] = 0; //Max
@@ -171,12 +171,12 @@ namespace SC2_3DS
                         vmxobject.SkinnedData = vmxobject.Object_0[i];
                         skinned_bool = true;
                     }
-                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_0[i].SkinnedMesh);
+                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_0[i]);
                 }
                 else if (vmxobject.Object_0[i].ObjectType == MeshXboxContent.STATIC)
                 {
                     vmxobject.Object_0[i].StaticMesh = ObjectStaticXboxHelper(vmxobject.Object_0[i], input, reader);
-                    vmxobject.StaticMeshList.Add(vmxobject.Object_0[i].StaticMesh);
+                    vmxobject.StaticMeshList.Add(vmxobject.Object_0[i]);
                 }
             }
             for (int i = 0; i < vmxobject.VMXheader.Object1Count; i++)
@@ -194,12 +194,12 @@ namespace SC2_3DS
                         vmxobject.SkinnedData = vmxobject.Object_1[i];
                         skinned_bool = true;
                     }
-                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_1[i].SkinnedMesh);
+                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_1[i]);
                 }
                 else if (vmxobject.Object_1[i].ObjectType == MeshXboxContent.STATIC)
                 {
                     vmxobject.Object_1[i].StaticMesh = ObjectStaticXboxHelper(vmxobject.Object_1[i], input, reader);
-                    vmxobject.StaticMeshList.Add(vmxobject.Object_1[i].StaticMesh);
+                    vmxobject.StaticMeshList.Add(vmxobject.Object_1[i]);
                 }
             }
             for (int i = 0; i < vmxobject.VMXheader.Object2Count; i++)
@@ -217,12 +217,12 @@ namespace SC2_3DS
                         vmxobject.SkinnedData = vmxobject.Object_2[i];
                         skinned_bool = true;
                     }
-                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_2[i].SkinnedMesh);
+                    vmxobject.SkinnedMeshList.Add(vmxobject.Object_2[i]);
                 }
                 else if (vmxobject.Object_2[i].ObjectType == MeshXboxContent.STATIC)
                 {
                     vmxobject.Object_2[i].StaticMesh = ObjectStaticXboxHelper(vmxobject.Object_2[i], input, reader);
-                    vmxobject.StaticMeshList.Add(vmxobject.Object_2[i].StaticMesh);
+                    vmxobject.StaticMeshList.Add(vmxobject.Object_2[i]);
                 }
             }
             //Skinned buffers are set here for convience
