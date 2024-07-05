@@ -72,8 +72,7 @@ namespace SC2_3DS
             public uint Map2Offset;
             public Vector4 AmbientRGBA;
             public Vector4 DiffuseRGBA;
-            public Vector3 SpecularRGB;
-            public float SpecularPower;
+            public Vector4 SpecularRGBA;
         } // 80 bytes
 
         public static MaterialTable ReadMaterialTableXbox(BinaryReader reader)
@@ -93,8 +92,7 @@ namespace SC2_3DS
                  Map2Offset = ReadUInt32L(reader),
                  AmbientRGBA = ReadVector4L(reader),
                  DiffuseRGBA = ReadVector4L(reader),
-                 SpecularRGB = ReadVector3L(reader),
-                 SpecularPower = ReadSingleL(reader)
+                 SpecularRGBA = ReadVector4L(reader)
             };
             return value;
         }
@@ -115,8 +113,7 @@ namespace SC2_3DS
                 Map1Offset = ReadUInt32B(reader),
                 Map2Offset = ReadUInt32B(reader),
                 AmbientRGBA = ReadVector4B(reader),
-                SpecularRGB = ReadVector3B(reader),
-                SpecularPower = ReadSingleB(reader)
+                SpecularRGBA = ReadVector4B(reader)
             };
             return value;
         }

@@ -1,5 +1,9 @@
-﻿using System;
+﻿using DdsFileTypePlus;
+using PaintDotNet;
+using SharpGLTF.Materials;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -20,31 +24,58 @@ namespace SC2_3DS
     {
         static public void TextureExportXbox(VMXObject vmxobject)
         {
+            string dds_folder = "DDS";
+            string png_folder = "PNG";
+            if (!Directory.Exists(dds_folder))
+                Directory.CreateDirectory(dds_folder);
+            if (!Directory.Exists(png_folder))
+                Directory.CreateDirectory(png_folder);
+
             for (int i = 0; i < vmxobject.TextureTables.Length; i++)
             {
-                string name = $"Texture{i}.dds";
-
+                string name = $"{dds_folder}\\Texture{i}.dds";
                 using (FileStream fs = new FileStream(name, FileMode.Create))
-                using (BinaryWriter writer = new BinaryWriter(fs))
-                    WriteTextureXbox(writer, vmxobject.TextureTables[i]);
+                    using (BinaryWriter writer = new BinaryWriter(fs))
+                        WriteTextureXbox(writer, vmxobject.TextureTables[i]);
+
+                Surface surface = DdsFile.Load($"{dds_folder}\\Texture{i}.dds");
+                using (Bitmap bitmap = surface.CreateAliasedBitmap())
+                    bitmap.Save($"{png_folder}\\Texture{i}.png", System.Drawing.Imaging.ImageFormat.Png);
             }
         }
 
         static public void TextureExportGCN(VMGObject vmgobject)
         {
+            string dds_folder = "DDS";
+            string png_folder = "PNG";
+            if (!Directory.Exists(dds_folder))
+                Directory.CreateDirectory(dds_folder);
+            if (!Directory.Exists(png_folder))
+                Directory.CreateDirectory(png_folder);
+
             for (int i = 0; i < vmgobject.TextureTables.Length; i++)
             {
-                string Name = $"Texture{i}.dds";
-                string NameAlpha = $"Texture{i}_Alpha.dds";
+                string name = $"{dds_folder}\\Texture{i}.dds";
+                string name_alpha = $"{dds_folder}\\Texture{i}_Alpha.dds";
 
-                using (FileStream fs = new FileStream(Name, FileMode.Create))
+                using (FileStream fs = new FileStream(name, FileMode.Create))
                 using (BinaryWriter writer = new BinaryWriter(fs))
                     WriteTextureGCN(writer, vmgobject.TextureTables[i]);
 
+                Surface surface = DdsFile.Load($"{dds_folder}\\Texture{i}.dds");
+                using (Bitmap bitmap = surface.CreateAliasedBitmap())
+                    bitmap.Save($"{png_folder}\\Texture{i}.png", System.Drawing.Imaging.ImageFormat.Png);
+
                 if (vmgobject.TextureTables[i].AlphaTextureDataOffset != 0)
-                    using (FileStream fs = new FileStream(NameAlpha, FileMode.Create))
+                {
+                    using (FileStream fs = new FileStream(name_alpha, FileMode.Create))
                     using (BinaryWriter writer = new BinaryWriter(fs))
                         WriteTextureAlphaGCN(writer, vmgobject.TextureTables[i]);
+
+                    Surface surface_alpha = DdsFile.Load($"{dds_folder}\\Texture{i}_Alpha.dds");
+                    using (Bitmap bitmap = surface_alpha.CreateAliasedBitmap())
+                        bitmap.Save($"{png_folder}\\Texture{i}_Alpha.png", System.Drawing.Imaging.ImageFormat.Png);
+                }
             }
         }
         //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header

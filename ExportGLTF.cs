@@ -25,6 +25,9 @@ using System.Text.Json;
 
 using NUnit.Framework;
 using SharpGLTF.Memory;
+using System.Windows;
+using PaintDotNet;
+using DdsFileTypePlus;
 
 namespace SC2_3DS
 {
@@ -46,34 +49,34 @@ namespace SC2_3DS
             scene.AddSkinnedMesh(mesh, Matrix4x4.Identity, jointlist.ToArray());
             // save the model in different formats
             var model = scene.ToGltf2();
-            //var settings = new WriteSettings
-            //{
-            //    ImageWriting = ResourceWriteMode.SatelliteFile,
-            //    ImageWriteCallback = imageSharingHook
-            //};
-            //string imageSharingHook(WriteContext ctx, string uri, MemoryImage image)
-            //{
-            //    if (File.Exists(image.SourcePath))
-            //    {
-            //        // image.SourcePath is an absolute path, we must make it relative to ctx.CurrentDirectory
-            //
-            //        var currDir = ctx.CurrentDirectory.FullName + "\\";
-            //
-            //        // if the shared texture can be reached by the model in its directory, reuse the texture.
-            //        if (image.SourcePath.StartsWith(currDir, StringComparison.OrdinalIgnoreCase))
-            //        {
-            //            // we've found the shared texture!, return the uri relative to the model:
-            //            return image.SourcePath.Substring(currDir.Length);
-            //        }
-            //    }
-            //
-            //    // we were unable to reuse the shared texture,
-            //    // default to write our own texture.
-            //
-            //    image.SaveToFile(Path.Combine(ctx.CurrentDirectory.FullName, uri));
-            //
-            //    return uri;
-            //}
+            var settings = new WriteSettings
+            {
+                ImageWriting = ResourceWriteMode.SatelliteFile,
+                ImageWriteCallback = imageSharingHook
+            };
+            string imageSharingHook(WriteContext ctx, string uri, MemoryImage image)
+            {
+                if (File.Exists(image.SourcePath))
+                {
+                    // image.SourcePath is an absolute path, we must make it relative to ctx.CurrentDirectory
+            
+                    var currDir = ctx.CurrentDirectory.FullName + "\\";
+                    
+                    // if the shared texture can be reached by the model in its directory, reuse the texture.
+                    if (image.SourcePath.StartsWith(currDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // we've found the shared texture!, return the uri relative to the model:
+                        return image.SourcePath.Substring(currDir.Length);
+                    }
+                }
+            
+                // we were unable to reuse the shared texture,
+                // default to write our own texture.
+            
+                image.SaveToFile(Path.Combine(ctx.CurrentDirectory.FullName, uri));
+            
+                return uri;
+            }
 
             model.SaveGLTF("mesh.gltf");
             model.SaveGLB("mesh.glb");
@@ -207,20 +210,30 @@ namespace SC2_3DS
         }
         static Dictionary<int, MaterialBuilder> CreateMaterialWithTexture(VMXObject vmxobject)//vector4 basecolor
         {
+            string pngfolder = "PNG";
             var materials = new Dictionary<int, MaterialBuilder>();
             for (int i = 0; i < vmxobject.MaterialOffsets.Length; i++)
             {
                 var num = vmxobject.MaterialDictionary.GetValueOrDefault(vmxobject.MaterialOffsets[i]);
-                int texturenum = 0;
-                texturenum = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset0);
+                int texturenum = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset0);
+
+                byte[] fileBytes = File.ReadAllBytes($"{pngfolder}\\Texture{texturenum}.png");
+                var imgBuilder = ImageBuilder.From(fileBytes);
                 var material = new MaterialBuilder()
-                    .WithBaseColor(ImageBuilder.From($"Texture{texturenum}.dds"), vmxobject.MaterialTables[num].DiffuseRGBA);
+                    .WithBaseColor(imgBuilder, vmxobject.MaterialTables[num].DiffuseRGBA);
                 if (vmxobject.MaterialTables[num].VXTOffset1 != 0)
                 {
                     texturenum = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset1);
+                    fileBytes = File.ReadAllBytes($"{pngfolder}\\Texture{texturenum}.png");
+                    imgBuilder = ImageBuilder.From(fileBytes);
                     material = material
-                        .WithSpecularColor(ImageBuilder.From($"Texture{texturenum}.dds"), vmxobject.MaterialTables[num].SpecularRGB)
-                        .WithSpecularFactor(ImageBuilder.From($"Texture{texturenum}.dds"), vmxobject.MaterialTables[num].SpecularPower);
+                        .WithChannelImage(KnownChannel.SpecularColor, imgBuilder)
+                        .WithChannelParam(KnownChannel.SpecularColor, KnownProperty.RGB, new Vector3(
+                            vmxobject.MaterialTables[num].SpecularRGBA.X,
+                            vmxobject.MaterialTables[num].SpecularRGBA.Y, 
+                            vmxobject.MaterialTables[num].SpecularRGBA.Z))
+                        .WithChannelImage(KnownChannel.SpecularFactor, imgBuilder)
+                        .WithChannelParam(KnownChannel.SpecularFactor, KnownProperty.SpecularFactor, vmxobject.MaterialTables[num].SpecularRGBA.W);
                 }
                 materials.Add(num, material);
             }

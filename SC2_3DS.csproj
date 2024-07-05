@@ -12,6 +12,7 @@
     <PackageReference Include="AssetRipper.SharpGLTF.Core" Version="1.0.2" />
     <PackageReference Include="AssetRipper.SharpGLTF.Runtime" Version="1.0.2" />
     <PackageReference Include="AssetRipper.SharpGLTF.Toolkit" Version="1.0.2" />
+    <PackageReference Include="DdsFileTypePlusHack" Version="1.2.1" />
     <PackageReference Include="NUnit" Version="4.1.0" />
     <PackageReference Include="OneOf" Version="3.0.263" />
     <PackageReference Include="SharpGLTF.Core" Version="1.0.0" />

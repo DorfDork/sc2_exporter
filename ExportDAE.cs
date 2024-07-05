@@ -376,7 +376,7 @@ namespace SC2_3DS
                 XmlElement phong = CreateAndAppendElement(doc, technique, "phong");
                 AddColorElement(doc, phong, "ambient", Vector4ToArray(vmxobject.MaterialTables[num].AmbientRGBA));
                 AddColorElement(doc, phong, "diffuse", Vector4ToArray(vmxobject.MaterialTables[num].DiffuseRGBA));
-                //AddColorElement(doc, phong, "specular", Vector4ToArray(vmxobject.MaterialTables[num].SpecularRGB));
+                AddColorElement(doc, phong, "specular", Vector4ToArray(vmxobject.MaterialTables[num].SpecularRGBA));
                 XmlElement diffuse = CreateAndAppendElement(doc, phong, "diffuse");
                 if (vmxobject.MaterialTables[num].VXTOffset0 != 0)
                     AddTextureElement(doc, diffuse, $"Texture{num}_0", "UVMap");
