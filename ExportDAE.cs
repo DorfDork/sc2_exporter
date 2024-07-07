@@ -374,9 +374,9 @@ namespace SC2_3DS
                 XmlElement technique = CreateAndAppendElement(doc, profile_common, "technique");
                 technique.SetAttribute("sid", "common");
                 XmlElement phong = CreateAndAppendElement(doc, technique, "phong");
-                AddColorElement(doc, phong, "ambient", Vector4ToArray(vmxobject.MaterialTables[num].AmbientRGBA));
-                AddColorElement(doc, phong, "diffuse", Vector4ToArray(vmxobject.MaterialTables[num].DiffuseRGBA));
-                AddColorElement(doc, phong, "specular", Vector4ToArray(vmxobject.MaterialTables[num].SpecularRGBA));
+                AddColorElement(doc, phong, "ambient", vmxobject.MaterialTables[num].AmbientRGBA);
+                AddColorElement(doc, phong, "diffuse", vmxobject.MaterialTables[num].DiffuseRGBA);
+                AddColorElement(doc, phong, "specular", vmxobject.MaterialTables[num].SpecularRGBA);
                 XmlElement diffuse = CreateAndAppendElement(doc, phong, "diffuse");
                 if (vmxobject.MaterialTables[num].VXTOffset0 != 0)
                     AddTextureElement(doc, diffuse, $"Texture{num}_0", "UVMap");
@@ -430,12 +430,12 @@ namespace SC2_3DS
             geometry.SetAttribute("id", "geometry0-mesh");
             geometry.SetAttribute("name", "geometry0");
             XmlElement mesh = CreateAndAppendElement(doc, geometry, "mesh");
-           // List<float[]> position_skinned = Buffer2PositionToArray(vmxobject.Buffer2);
-           // List<float[]> normal_skinned = Buffer2NormalToArray(vmxobject.Buffer2);
-           // List<float[]> texcoord_skinned = Buffer1TexcoordToArray(vmxobject.Buffer1);
-           // AddSourceElement(doc, mesh, "geometry0-positions", "float_array", position_skinned, "position");
-           // AddSourceElement(doc, mesh, "geometry0-normals", "float_array", normal_skinned, "normal");
-           // AddSourceElement(doc, mesh, "geometry0-texcoords", "float_array", texcoord_skinned, "texcoord");
+            List<float[]> position_skinned = Buffer2PositionToArray(vmxobject.Buffer2);
+            List<float[]> normal_skinned = Buffer2NormalToArray(vmxobject.Buffer2);
+            List<float[]> texcoord_skinned = Buffer1TexcoordToArray(vmxobject.Buffer1);
+            AddSourceElement(doc, mesh, "geometry0-positions", "float_array", position_skinned, "position");
+            AddSourceElement(doc, mesh, "geometry0-normals", "float_array", normal_skinned, "normal");
+            AddSourceElement(doc, mesh, "geometry0-texcoords", "float_array", texcoord_skinned, "texcoord");
             //Verts
             XmlElement vertices_element = CreateAndAppendElement(doc, mesh, "vertices");
             vertices_element.SetAttribute("id", "geometry0-vertices");
@@ -813,7 +813,7 @@ namespace SC2_3DS
             texture.SetAttribute("texcoord", texcoord);
         }
 
-        static void AddColorElement(XmlDocument doc, XmlElement parent, string tag, float[] color)
+        static void AddColorElement(XmlDocument doc, XmlElement parent, string tag, Vector4 color)
         {
             XmlElement color_element = CreateAndAppendElement(doc, parent, tag);
             XmlElement color_value = CreateAndAppendElement(doc, color_element, "color");

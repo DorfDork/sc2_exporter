@@ -112,6 +112,18 @@ namespace SC2_3DS
                 {
                     var parent = node_map[joint.BoneParentIdx]; //any child bone
                     var rotate = (joint.Rotation * 360) * (float.Pi / 180);
+                    if (joint.Ukn3 == 3) 
+                    {  
+                        rotate += (joint.Ukn1 * 360) * (float.Pi / 180); 
+                    }
+                    if (joint.Ukn3 == 7)
+                    {
+                        var transform1 = Matrix4x4.Identity;
+                        var transform2 = Matrix4x4.Identity;
+                        var transform3 = Matrix4x4.Identity;
+
+                        rotate += (joint.Ukn1 * 360) * (float.Pi / 180);
+                    }
                     var scale = new Vector3(joint.StartPositionScale, joint.StartPositionScale, joint.StartPositionScale);
                     var node = parent.CreateNode(joint.Name)
                         .WithLocalTranslation(joint.StartPosition)

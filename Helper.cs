@@ -1,37 +1,21 @@
-﻿using SC2_3DS;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Navigation;
+﻿using System.IO;
 using System.Numerics;
 using static SC2_3DS.Headers;
-using static SC2_3DS.Helper;
 using static SC2_3DS.Matrix;
 using static SC2_3DS.Objects;
 using static SC2_3DS.Textures;
 using static SC2_3DS.Weight;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Reflection;
-using System.Windows.Documents;
-using System.Windows.Markup;
-using System.Windows.Media.TextFormatting;
 
 namespace SC2_3DS
 {
     internal class Helper
     {
+        //Enum
         public enum Endianness
         {
             LittleEndian = 0,
             BigEndian = 1
         }
-
         public enum ConsoleVersion : byte
         {
             UNK0 = 0,
@@ -40,32 +24,27 @@ namespace SC2_3DS
             GAMECUBE = 3,
             XBOX = 4
         }
-
         public enum ModelContent : byte
         {
             STAGE = 0,
             CHARACTER = 1,
             WEAPON = 2
         }
-
         public enum MeshXboxContent : ushort
         {
             STATIC = 0,
             SKINNED = 4
         }
-
         public enum MeshGCNContent : byte
         {
             STATIC = 2, // (2, 2, 2, 2)
             SKINNED = 3 // (3, 3, 2, 3)  //(3, 3, 3, 3)
         }
-
         public enum PrimitiveXbox : ushort
         {
             TRIANGLESTRIP = 0,
             TRIANGLELIST = 1
         }
-
         public enum ImageTypeGCN : uint
         {
             I4 = 0, // (4 bit intensity, 8x8 tiles)
@@ -82,7 +61,6 @@ namespace SC2_3DS
             XFB = 15, // 0x0F
             UNK16 = 16 // 0x10
         }
-
         public enum ImageTypeXBOX : uint
         {
             ARGB = 6,
@@ -91,37 +69,6 @@ namespace SC2_3DS
             DXT3 = 14,
             DXT5 = 15
         }
-
-        public struct DDSHeaderFlags
-        {
-           public const int DDSD_CAPS = 0x1;
-           public const int DDSD_HEIGHT = 0x2;
-           public const int DDSD_WIDTH = 0x4;
-           public const int DDSD_PITCH = 0x8;
-           public const int DDSD_PIXELFORMAT = 0x1000;
-           public const int DDSD_MIPMAPCOUNT = 0x20000;
-           public const int DDSD_LINEARSIZE = 0x80000;
-           public const int DDSD_DEPTH = 0x800000;
-        }
-
-        public struct DDSPixelFlags
-        {
-            public const int DDPF_ALPHAPIXELS = 0x1;
-            public const int DDPF_ALPHA = 0x2;
-            public const int DDPF_FOURCC = 0x4;
-            public const int DDPF_PALETTEINDEXED8 = 0x20;
-            public const int DDPF_RGB = 0x40;
-            public const int DDPF_YUV = 0x200;
-            public const int DDPF_LUMINANCE = 0x20000;
-        }
-
-        public struct DDSCapFlags
-        {
-            public const int DDSCAPS_COMPLEX = 0x8;
-            public const int DDSCAPS_TEXTURE = 0x1000;
-            public const int DDSCAPS_MIPMAP = 0x400000;
-        }
-
         public enum TextureMapType : ushort
         {
             UNKTT0 = 0,
@@ -131,13 +78,11 @@ namespace SC2_3DS
             UNKTT = 4,
             SPECBALL = 5
         }
-
         public enum MaterialTableCull : byte
         {
             DRAWNBOTHSIDES = 0,
             DRAWNONESIDE = 8
         }
-
         [Flags]
         public enum FmtTXVFlag : uint
         {
@@ -156,43 +101,43 @@ namespace SC2_3DS
             BIT13 = 1 << 12,
             BIT14 = 1 << 13
         }
-
+        public struct DDSHeaderFlags
+        {
+           public const int DDSD_CAPS = 0x1;
+           public const int DDSD_HEIGHT = 0x2;
+           public const int DDSD_WIDTH = 0x4;
+           public const int DDSD_PITCH = 0x8;
+           public const int DDSD_PIXELFORMAT = 0x1000;
+           public const int DDSD_MIPMAPCOUNT = 0x20000;
+           public const int DDSD_LINEARSIZE = 0x80000;
+           public const int DDSD_DEPTH = 0x800000;
+        }
+        public struct DDSPixelFlags
+        {
+            public const int DDPF_ALPHAPIXELS = 0x1;
+            public const int DDPF_ALPHA = 0x2;
+            public const int DDPF_FOURCC = 0x4;
+            public const int DDPF_PALETTEINDEXED8 = 0x20;
+            public const int DDPF_RGB = 0x40;
+            public const int DDPF_YUV = 0x200;
+            public const int DDPF_LUMINANCE = 0x20000;
+        }
+        public struct DDSCapFlags
+        {
+            public const int DDSCAPS_COMPLEX = 0x8;
+            public const int DDSCAPS_TEXTURE = 0x1000;
+            public const int DDSCAPS_MIPMAP = 0x400000;
+        }
         public struct FacesData
         {
             public ushort[] Data;
         }
-
-        public struct TripleArr
-        {
-            public float[] Data;
-        }
-
-        public struct Byte4Array
-        {
-            public byte B1;
-            public byte B2;
-            public byte B3;
-            public byte B4;
-        }
-        public static Byte4Array ReadByte4Array(BinaryReader reader)
-        {
-            Byte4Array value = new Byte4Array
-            {
-                B1 = reader.ReadByte(),
-                B2 = reader.ReadByte(),
-                B3 = reader.ReadByte(),
-                B4 = reader.ReadByte()
-            };
-            return value;
-        }
-
         public struct Vector3Half
         {
             public Half X;
             public Half Y;
             public Half Z;
         }
-
         public static Vector3Half ReadVector3Half(BinaryReader reader)
         {
             Vector3Half value = new Vector3Half
@@ -203,7 +148,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector2 ReadVector2L(BinaryReader reader)
         {
             Vector2 value = new Vector2
@@ -213,7 +157,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector2 ReadVector2B(BinaryReader reader)
         {
             Vector2 value = new Vector2
@@ -223,7 +166,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector3 ReadVector3L(BinaryReader reader)
         {
             Vector3 value = new Vector3
@@ -234,7 +176,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector3 ReadVector3B(BinaryReader reader)
         {
             Vector3 value = new Vector3
@@ -245,7 +186,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector4 ReadVector4L(BinaryReader reader)
         {
             Vector4 value = new Vector4
@@ -257,7 +197,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Vector4 ReadVector4B(BinaryReader reader)
         {
             Vector4 value = new Vector4
@@ -269,7 +208,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Matrix4x4 ReadMatrix4x4L(BinaryReader reader)
         {
             Matrix4x4 value = new Matrix4x4
@@ -296,7 +234,6 @@ namespace SC2_3DS
             };
             return value;
         }
-
         public static Matrix4x4 ReadMatrix4x4B(BinaryReader reader)
         {
             Matrix4x4 value = new Matrix4x4
@@ -323,78 +260,86 @@ namespace SC2_3DS
             };
             return value;
         }
-
-        static public ushort ReadUInt16L(BinaryReader reader)
+        public struct Byte4Array
+        {
+            public byte B1;
+            public byte B2;
+            public byte B3;
+            public byte B4;
+        }
+        public static Byte4Array ReadByte4Array(BinaryReader reader)
+        {
+            Byte4Array value = new Byte4Array
+            {
+                B1 = reader.ReadByte(),
+                B2 = reader.ReadByte(),
+                B3 = reader.ReadByte(),
+                B4 = reader.ReadByte()
+            };
+            return value;
+        }
+        public static ushort ReadUInt16L(BinaryReader reader)
         {
             return reader.ReadUInt16();
         }
-
-        static public short ReadInt16L(BinaryReader reader)
-        {
-            return reader.ReadInt16();
-        }
-
-        static public uint ReadUInt32L(BinaryReader reader)
-        {
-            return reader.ReadUInt32();
-        }
-
-        static public int ReadInt32L(BinaryReader reader)
-        {
-            return reader.ReadInt32();
-        }
-
-        static public Half ReadHalfL(BinaryReader reader)
-        {
-            return reader.ReadHalf();
-        }
-
-        static public float ReadSingleL(BinaryReader reader)
-        {
-            return reader.ReadSingle();
-        }
-
-        static public ushort ReadUInt16B(BinaryReader reader)
+        public static ushort ReadUInt16B(BinaryReader reader)
         {
             var data = reader.ReadBytes(2);
             Array.Reverse(data);
             return BitConverter.ToUInt16(data, 0);
         }
-
-        static public short ReadInt16B(BinaryReader reader)
+        public static short ReadInt16L(BinaryReader reader)
+        {
+            return reader.ReadInt16();
+        }
+        public static short ReadInt16B(BinaryReader reader)
         {
             var data = reader.ReadBytes(2);
             Array.Reverse(data);
             return BitConverter.ToInt16(data, 0);
         }
-
-        static public uint ReadUInt32B(BinaryReader reader)
+        public static uint ReadUInt32L(BinaryReader reader)
+        {
+            return reader.ReadUInt32();
+        }
+        public static uint ReadUInt32B(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToUInt32(data, 0);
         }
-
-        static public int ReadInt32B(BinaryReader reader)
+        public static int ReadInt32L(BinaryReader reader)
+        {
+            return reader.ReadInt32();
+        }
+        public static int ReadInt32B(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToInt32(data, 0);
         }
-
-        static public Half ReadHalfB(BinaryReader reader)
+        public static Half ReadHalfL(BinaryReader reader)
+        {
+            return reader.ReadHalf();
+        }
+        public static Half ReadHalfB(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToHalf(data, 0);
         }
-
-        static public float ReadSingleB(BinaryReader reader)
+        public static float ReadSingleL(BinaryReader reader)
+        {
+            return reader.ReadSingle();
+        }
+        public static float ReadSingleB(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToSingle(data, 0);
         }
+
+
 
         public static string ReadNullTerminatedString(BinaryReader reader)
         {
@@ -504,48 +449,26 @@ namespace SC2_3DS
             }
         }
 
-        public static List<Vector3> Buffer2PositionToVector(Buffer2Xbox[] buffer2)
+        public static List<float[]> Buffer2PositionToArray(Buffer2Xbox[] buffer2)
         {
-            List<Vector3> positions = new List<Vector3>();
+            List<float[]> positions = new List<float[]> { };
             foreach (var value in buffer2)
             {
-                positions.Add(value.Position);
+                float[] position = { value.Position.X, value.Position.Y, value.Position.Z };
+                positions.Add(position);
             }
             return positions;
         }
-
-        public static List<Vector3> Buffer2NormalToVector(Buffer2Xbox[] buffer2)
+        public static List<float[]> Buffer2NormalToArray(Buffer2Xbox[] buffer2)
         {
-            List<Vector3> normals = new List<Vector3>();
+            List<float[]> normals = new List<float[]> { };
             foreach (var value in buffer2)
             {
-                normals.Add(value.Normal);
+                float[] normal = { value.Normal.X, value.Normal.Y, value.Normal.Z };
+                normals.Add(normal);
             }
             return normals;
         }
-
-       // public static List<float[]> Buffer2PositionToArray(Buffer2Xbox[] buffer2)
-       // {
-       //     List<float[]> positions = new List<float[]> { };
-       //     foreach (var value in buffer2)
-       //     {
-       //         float[] position = { value.Position.X, value.Position.Y, value.Position.Z };
-       //         positions.Add(position);
-       //     }
-       //     return positions;
-       // }
-       //
-       // public static List<float[]> Buffer2NormalToArray(Buffer2Xbox[] buffer2)
-       // {
-       //     List<float[]> normals = new List<float[]> { };
-       //     foreach (var value in buffer2)
-       //     {
-       //         float[] normal = { value.Normal.X, value.Normal.Y, value.Normal.Z };
-       //         normals.Add(normal);
-       //     }
-       //     return normals;
-       // }
-
         public static List<float[]> Buffer4PositionToArray(Buffer4Xbox[] buffer4)
         {
             List<float[]> positions = new List<float[]> { };
@@ -556,7 +479,6 @@ namespace SC2_3DS
             }
             return positions;
         }
-
         public static List<float[]> Buffer4NormalToArray(Buffer4Xbox[] buffer4)
         {
             List<float[]> normals = new List<float[]> { };
@@ -567,7 +489,6 @@ namespace SC2_3DS
             }
             return normals;
         }
-
         public static List<float[]> Buffer1TexcoordToArray(Buffer1Xbox[] buffer1)
         {
             List<float[]> TexCoords = new List<float[]> { };
@@ -582,7 +503,6 @@ namespace SC2_3DS
             }
             return TexCoords;
         }
-
         public static List<float[]> Buffer4TexcoordToArray(Buffer4Xbox[] buffer4)
         {
             List<float[]> TexCoords = new List<float[]> { };
@@ -598,107 +518,7 @@ namespace SC2_3DS
             return TexCoords;
         }
 
-        public static float[] Vector4ToArray(Vector4 value) => new[] { value.X, value.Y, value.Z, value.W };
-
-
-        public static List<Tuple<ushort, ushort, ushort>> TriangleStripToFaceTuple(ushort[] strip)
-        {
-            var faces = new List<Tuple<ushort, ushort, ushort>>();
-            int StartDirection = -1;
-            int faceDirection = StartDirection;
-
-            ushort fa = strip[0];
-            ushort fb = strip[1];
-            ushort fc;
-
-            for (int i = 2; i < strip.Length; i++)
-            {
-                fc = strip[i];
-                if (fc == 0xFFFF)
-                {
-                    // Handle end-of-strip marker
-                    i++;
-                    if (i < strip.Length)
-                    {
-                        fa = strip[i];
-                        i++;
-                        if (i < strip.Length)
-                        {
-                            fb = strip[i];
-                        }
-                    }
-                    faceDirection = StartDirection;
-                }
-                else
-                {
-                    faceDirection *= -1;
-                    if (fa != fb && fb != fc && fc != fa)
-                    {
-                        if (faceDirection > 0)
-                            faces.Add(Tuple.Create((ushort)fa, (ushort)fb, (ushort)fc));
-                        else
-                            faces.Add(Tuple.Create((ushort)fa, (ushort)fc, (ushort)fb));
-                    }
-                    fa = fb;
-                    fb = fc;
-                }
-            }
-            return faces;
-        }
-
-        public static void IndiceDataIndexGCN(BinaryReader reader, MemoryStream input, VMGObject vmgobject, LayerObjectEntryGCN mesh)
-        {
-            int flag = 0;
-            List<int> indice1 = new List<int>();
-            List<int> indice2 = new List<int>();
-            List<int> indice3 = new List<int>();
-            List<int> indice4 = new List<int>();
-            int maxoffset = (int)mesh.FaceOffset + (mesh.FaceCount * 32);
-            input.Seek(mesh.FaceOffset, SeekOrigin.Begin);
-            while ((int)reader.BaseStream.Position < maxoffset)
-            {
-                if (mesh.Unk0[0] == 2)
-                    flag = ReadUInt16B(reader);
-                else if (mesh.Unk0[0] == 2)
-                    flag = reader.ReadByte();
-
-                if (flag == 152 || flag == 144)
-                {
-                    int indexcount = ReadUInt16B(reader);
-                    for (int index = 0; index < indexcount; index++)
-                    {
-
-                        
-                        indice1.Add(ReadIndiceDataGCN(reader, mesh.Indice.B1));
-                        indice2.Add(ReadIndiceDataGCN(reader, mesh.Indice.B2));
-                        indice3.Add(ReadIndiceDataGCN(reader, mesh.Indice.B3));
-                        indice4.Add(ReadIndiceDataGCN(reader, mesh.Indice.B4));
-
-                        //indice1.
-                    }
-                }
-            }
-        }
-
-        public static int ReadIndiceDataGCN(BinaryReader reader, byte indice)
-        { 
-            int value = 0;
-            if (indice == 2)
-                value = reader.ReadByte();
-            else if (indice == 3)
-                value = ReadUInt16B(reader);
-
-            return value;
-        }
-
-        public static List<Tuple<ushort, ushort, ushort>> TriangleListToFaceTuple(ushort[] strip)
-        {
-            var faces = new List<Tuple<ushort, ushort, ushort>>();
-            for (int i = 0; i < strip.Length; i += 3)
-                faces.Add(Tuple.Create((ushort)strip[i], (ushort)strip[i + 1], (ushort)strip[i + 2])); // fa fb fc
-            return faces;
-        }
-
+        //GCN Textures
         static public uint ImageSizeGCN(uint num)
         {
             uint value = 0;
@@ -720,7 +540,6 @@ namespace SC2_3DS
             }
             return value;
         }
-
         static public byte[] UnSwizzleGCNData(byte[] srcBuf, int size, int width, int height)
         {
             byte[] newBuf = new byte[size];
@@ -786,7 +605,6 @@ namespace SC2_3DS
             }
             return totalchunks.ToArray();
         }
-
         public static byte[] ConvertI4ToRGBA(byte[] i4Data)
         {
             int rgbaLength = i4Data.Length * 4;
@@ -806,7 +624,6 @@ namespace SC2_3DS
 
             return rgbaData;
         }
-
         public static byte[] UnSwizzleP8Bytes(byte[] srcBuf, int width, int height, int bytesPerPixel)
         {
             (int maskX, int maskY, int maskZ) = GenerateSwizzleMasks(height, width);
@@ -826,7 +643,6 @@ namespace SC2_3DS
             }
             return dstBuf;
         }
-
         private static (int, int, int) GenerateSwizzleMasks(int height, int width)
         {
             int maskX = 0, maskY = 0, maskZ = 0;
@@ -853,7 +669,6 @@ namespace SC2_3DS
             }
             return (maskX, maskY, maskZ);
         }
-
         private static int FillPattern(int pattern, int value)
         {
             int result = 0;
@@ -871,18 +686,15 @@ namespace SC2_3DS
             }
             return result;
         }
-
         private static int GetSwizzledOffset(int x, int y, int z, int maskX, int maskY, int maskZ, int bytesPerPixel)
         {
             return bytesPerPixel * (FillPattern(maskX, x) | FillPattern(maskY, y) | FillPattern(maskZ, z));
         }
-
         public static byte SwapByte(byte srcByte)
         {
             byte newByte = (byte)((srcByte & 51) << 2 | (srcByte & 204) >> 2);
             return (byte)(((newByte & 15) << 4 | (newByte & 240) >> 4) & 255);
         }
-
         public static byte[] ByteSwapAlternateBADC(byte[] srcBuf)
         {
             byte[] outBuf = new byte[srcBuf.Length];
@@ -896,7 +708,6 @@ namespace SC2_3DS
             }
             return outBuf;
         }
-
         static public byte[] ByteSwapAC(byte[] srcBuf)
         {
             byte[] outBuf = new byte[srcBuf.Length];
@@ -909,6 +720,8 @@ namespace SC2_3DS
             }
             return outBuf;
         }
+
+        //Xbox Textures
         public static byte[] DecodeC8(byte[] src, int width, int height, int textureFormat, ushort[] tlut, int tlutFmt)
         {
             byte[] dst = new byte[src.Length];
@@ -937,7 +750,6 @@ namespace SC2_3DS
             }
             return dst;
         }
-
         private static void DecodeBytesC8(byte[] dst, byte[] src, int dstPos, int srcPos, ushort[] tlut, int tlutFmt)
         {
             for (int i = 0; i < 8; i++)
@@ -947,7 +759,6 @@ namespace SC2_3DS
                 dstPos++;
             }
         }
-
         private static byte DecodePixelPaletted(ushort pixel, int tlutFmt)
         {
             switch (tlutFmt)
@@ -962,14 +773,12 @@ namespace SC2_3DS
                     return 0;
             }
         }
-
         private static byte DecodePixelIA8(ushort value)
         {
             byte num1 = (byte)(value & 0xFF);
             byte num2 = (byte)(value >> 8);
             return (byte)(num2 | (num2 << 8) | (num2 << 16) | (num1 << 24));
         }
-
         private static byte DecodePixelRGB565(ushort value)
         {
             byte num1 = Convert5To8((value >> 11) & 31);
@@ -977,7 +786,6 @@ namespace SC2_3DS
             byte num3 = Convert5To8(value & 31);
             return (byte)(num1 | (num2 << 8) | (num3 << 16) | (0xFF << 24));
         }
-
         private static byte DecodePixelRGB5A3(ushort value)
         {
             byte num1, num2, num3, num4;
@@ -997,27 +805,22 @@ namespace SC2_3DS
             }
             return (byte)(num1 | (num2 << 8) | (num3 << 16) | (num4 << 24));
         }
-
         private static byte Convert3To8(int v)
         {
             return (byte)((v << 5) | (v << 2) | (v >> 1));
         }
-
         private static byte Convert4To8(int v)
         {
             return (byte)((v << 4) | v);
         }
-
         private static byte Convert5To8(int v)
         {
             return (byte)((v << 3) | (v >> 2));
         }
-
         private static byte Convert6To8(int v)
         {
             return (byte)((v << 2) | (v >> 4));
         }
-
         public static void R5G6B5ToRGBA8(ushort SrcPixel, ref byte[] Dest, int Offset)
         {
             byte num1 = (byte)(((int)SrcPixel & 61696) >> 11);
@@ -1031,12 +834,7 @@ namespace SC2_3DS
             Dest[Offset + 2] = num6;
             Dest[Offset + 3] = byte.MaxValue;
         }
-
-        public static void GRBA8ToRGBA8(
-          ushort SrcPixel,
-          ushort SrcPixel2,
-          ref byte[] Dest,
-          int Offset)
+        public static void GRBA8ToRGBA8(ushort SrcPixel, ushort SrcPixel2, ref byte[] Dest, int Offset)
         {
             byte num1 = (byte)((uint)SrcPixel & (uint)byte.MaxValue);
             byte num2 = (byte)(((int)SrcPixel & 65280) >> 8);
@@ -1047,7 +845,6 @@ namespace SC2_3DS
             Dest[Offset + 2] = num3;
             Dest[Offset + 3] = num4;
         }
-
         public static void RGB5A3ToRGBA8(ushort SrcPixel, ref byte[] Dest, int Offset)
         {
             byte num1;
@@ -1080,7 +877,6 @@ namespace SC2_3DS
             Dest[Offset + 2] = num4;
             Dest[Offset + 3] = num1;
         }
-
         public static void Fix4x4(ref byte[] dest, byte[] src, int s, int width, int height)
         {
             for (int index1 = 0; index1 < height; index1 += 4)
@@ -1105,7 +901,6 @@ namespace SC2_3DS
                 }
             }
         }
-
         public static void Fix8x4(ref byte[] dest, byte[] src, int s, int width, int height)
         {
             for (int index1 = 0; index1 < height; index1 += 4)
@@ -1129,7 +924,6 @@ namespace SC2_3DS
                 }
             }
         }
-
         public static void Fix8x4Expand(ref byte[] dest, byte[] src, int s, int width, int height)
         {
             for (int index1 = 0; index1 < height; index1 += 4)
@@ -1156,7 +950,6 @@ namespace SC2_3DS
                 }
             }
         }
-
         public static void Fix8x8Expand(ref byte[] dest, byte[] src, int s, int width, int height)
         {
             for (int index1 = 0; index1 < height; index1 += 8)
@@ -1184,7 +977,6 @@ namespace SC2_3DS
                 }
             }
         }
-
         public static void Fix8x8NoExpand(ref byte[] dest, byte[] src, int s, int width, int height)
         {
             for (int index1 = 0; index1 < height; index1 += 8)
@@ -1213,8 +1005,6 @@ namespace SC2_3DS
                 }
             }
         }
-
-
         //public static void FixRGB5A3(ref byte[] Dest, byte[] Src, int S, int Width, int Height)
         //{
         //    for (int index1 = 0; index1 < Height; index1 += 4)
@@ -1256,7 +1046,6 @@ namespace SC2_3DS
         //        }
         //    }
         //}
-
         public static void FixRGBA8(ref byte[] Dest, byte[] Src, int S, int Width, int Height)
         {
             for (int index1 = 0; index1 < Height; index1 += 4)
@@ -1297,6 +1086,97 @@ namespace SC2_3DS
             }
         }
 
+        //Model Xbox
+        public static List<Tuple<ushort, ushort, ushort>> TriangleStripToFaceTuple(ushort[] strip)
+        {
+            var faces = new List<Tuple<ushort, ushort, ushort>>();
+            int StartDirection = -1;
+            int faceDirection = StartDirection;
+
+            ushort fa = strip[0];
+            ushort fb = strip[1];
+            ushort fc;
+
+            for (int i = 2; i < strip.Length; i++)
+            {
+                fc = strip[i];
+                if (fc == 0xFFFF)
+                {
+                    // Handle end-of-strip marker
+                    i++;
+                    if (i < strip.Length)
+                    {
+                        fa = strip[i];
+                        i++;
+                        if (i < strip.Length)
+                        {
+                            fb = strip[i];
+                        }
+                    }
+                    faceDirection = StartDirection;
+                }
+                else
+                {
+                    faceDirection *= -1;
+                    if (fa != fb && fb != fc && fc != fa)
+                    {
+                        if (faceDirection > 0)
+                            faces.Add(Tuple.Create((ushort)fa, (ushort)fb, (ushort)fc));
+                        else
+                            faces.Add(Tuple.Create((ushort)fa, (ushort)fc, (ushort)fb));
+                    }
+                    fa = fb;
+                    fb = fc;
+                }
+            }
+            return faces;
+        }
+        public static List<Tuple<ushort, ushort, ushort>> TriangleListToFaceTuple(ushort[] strip)
+        {
+            var faces = new List<Tuple<ushort, ushort, ushort>>();
+            for (int i = 0; i < strip.Length; i += 3)
+                faces.Add(Tuple.Create((ushort)strip[i], (ushort)strip[i + 1], (ushort)strip[i + 2])); // fa fb fc
+            return faces;
+        }
+        public static void IndiceDataIndexGCN(BinaryReader reader, MemoryStream input, VMGObject vmgobject, LayerObjectEntryGCN mesh)
+        {
+            int flag = 0;
+            List<int> indice1 = new List<int>();
+            List<int> indice2 = new List<int>();
+            List<int> indice3 = new List<int>();
+            List<int> indice4 = new List<int>();
+            int maxoffset = (int)mesh.FaceOffset + (mesh.FaceCount * 32);
+            input.Seek(mesh.FaceOffset, SeekOrigin.Begin);
+            while ((int)reader.BaseStream.Position < maxoffset)
+            {
+                if (mesh.Unk0[0] == 2)
+                    flag = ReadUInt16B(reader);
+                else if (mesh.Unk0[0] == 2)
+                    flag = reader.ReadByte();
+
+                if (flag == 152 || flag == 144)
+                {
+                    int indexcount = ReadUInt16B(reader);
+                    for (int index = 0; index < indexcount; index++)
+                    {
+                        indice1.Add(ReadIndiceDataGCN(reader, mesh.Indice.B1));
+                        indice2.Add(ReadIndiceDataGCN(reader, mesh.Indice.B2));
+                        indice3.Add(ReadIndiceDataGCN(reader, mesh.Indice.B3));
+                        indice4.Add(ReadIndiceDataGCN(reader, mesh.Indice.B4));
+                    }
+                }
+            }
+        }
+        public static int ReadIndiceDataGCN(BinaryReader reader, byte indice)
+        {
+            int value = 0;
+            if (indice == 2)
+                value = reader.ReadByte();
+            else if (indice == 3)
+                value = ReadUInt16B(reader);
+
+            return value;
+        }
         public static StaticMeshXbox ObjectStaticXboxHelper(LayerObjectEntryXbox layer_object, MemoryStream input, BinaryReader reader)
         {
             layer_object.StaticMesh = new StaticMeshXbox();
@@ -1313,7 +1193,6 @@ namespace SC2_3DS
 
             return layer_object.StaticMesh;
         }
-
         //public static StaticMeshGCN ObjectStaticGCNHelper(LayerObjectEntryGCN layer_object, MemoryStream input, BinaryReader reader)
         //{
         //    layer_object.StaticMesh = new StaticMeshXbox();
@@ -1330,8 +1209,6 @@ namespace SC2_3DS
         //
         //    return layer_object.StaticMesh;
         //}
-
-
         public struct VMXObject 
         {
             public VMXHeader VMXheader;
