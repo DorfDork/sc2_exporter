@@ -1234,8 +1234,8 @@ namespace SC2_3DS
             public Buffer1Xbox[] Buffer1;
             public Buffer2Xbox[] Buffer2;
             public Buffer2Xbox[] Buffer3;
-            public List<StaticMeshXbox> StaticMeshList;
-            public List<SkinnedMeshXbox> SkinnedMeshList;
+            public List<LayerObjectEntryXbox> StaticMeshList;
+            public List<LayerObjectEntryXbox> SkinnedMeshList;
             public LayerObjectEntryXbox SkinnedData;
 
         }

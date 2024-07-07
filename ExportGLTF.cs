@@ -1,67 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static SC2_3DS.Helper;
+﻿using static SC2_3DS.Helper;
 using static SC2_3DS.Weight;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Materials;
-using SharpGLTF.Collections;
 using SharpGLTF.Transforms;
-using SharpGLTF.Runtime;
 using SharpGLTF.Scenes;
 using SharpGLTF.Schema2;
 using System.Numerics;
-using System.Xml;
-using System.Windows.Controls;
 using static SC2_3DS.Objects;
-using System.Reflection;
-using static System.Net.Mime.MediaTypeNames;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
-
-using NUnit.Framework;
 using SharpGLTF.Memory;
-using System.Windows;
-using PaintDotNet;
-using DdsFileTypePlus;
+using System;
 
 namespace SC2_3DS
 {
-    using VERTEX = VertexBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4>;
-    
+    using VERTEXSKINNED = VertexBuilder<VertexPositionNormal, VertexColor1Texture1, VertexJoints4>;
+    using VERTEXSTATIC = VertexBuilder<VertexPositionNormal, VertexColor1Texture1, VertexEmpty>;
+
     internal class ExportGLTF
     {
         public static void Export(VMXObject vmxobject)
         {
-            var mesh = VERTEX.CreateCompatibleMesh();
-            AddGeometrySkinned(mesh, vmxobject);
+            var mesh_skinned = VERTEXSKINNED.CreateCompatibleMesh();
             var scene = new SceneBuilder();
-            var root = new NodeBuilder();
-            root = root
+            var root = new NodeBuilder()
                 .WithLocalTranslation(new Vector3(0, 0, 0))
                 .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(0, 90 * (float.Pi / 180), 0))
                 .WithLocalScale(new Vector3(1, 1, 1));
-            var jointlist = Bones(vmxobject, root);
-            scene.AddSkinnedMesh(mesh, Matrix4x4.Identity, jointlist.ToArray());
-            // save the model in different formats
+
+            Dictionary<int, NodeBuilder> node_map = new Dictionary<int, NodeBuilder>();
+            var joint_list = Bones(vmxobject, root, node_map);
+            AddGeometrySkinned(mesh_skinned, vmxobject);
+            scene.AddSkinnedMesh(mesh_skinned, vmxobject.MatrixTables[vmxobject.MatrixDictionary.GetValueOrDefault((int)vmxobject.SkinnedData.MatrixOffset)].Matrix, joint_list.ToArray());
+            AddGeometryStatic(scene, vmxobject, node_map);
+
             var model = scene.ToGltf2();
             var settings = new WriteSettings
             {
                 ImageWriting = ResourceWriteMode.SatelliteFile,
                 ImageWriteCallback = imageSharingHook
             };
+
             string imageSharingHook(WriteContext ctx, string uri, MemoryImage image)
             {
                 if (File.Exists(image.SourcePath))
                 {
                     // image.SourcePath is an absolute path, we must make it relative to ctx.CurrentDirectory
-            
                     var currDir = ctx.CurrentDirectory.FullName + "\\";
-                    
                     // if the shared texture can be reached by the model in its directory, reuse the texture.
                     if (image.SourcePath.StartsWith(currDir, StringComparison.OrdinalIgnoreCase))
                     {
@@ -69,12 +54,9 @@ namespace SC2_3DS
                         return image.SourcePath.Substring(currDir.Length);
                     }
                 }
-            
                 // we were unable to reuse the shared texture,
                 // default to write our own texture.
-            
                 image.SaveToFile(Path.Combine(ctx.CurrentDirectory.FullName, uri));
-            
                 return uri;
             }
 
@@ -82,10 +64,9 @@ namespace SC2_3DS
             model.SaveGLB("mesh.glb");
         }
 
-        static List<NodeBuilder> Bones(VMXObject vmxobject, NodeBuilder root)
+        static List<NodeBuilder> Bones(VMXObject vmxobject, NodeBuilder root, Dictionary<int, NodeBuilder> node_map)
         {
-            Dictionary<int, NodeBuilder> node_map = new Dictionary<int, NodeBuilder>();
-            var jointlist = new List<NodeBuilder>();
+            var joint_list = new List<NodeBuilder>();
             foreach (var joint in vmxobject.BoneTables)
             {
                 if (joint.BoneParentIdx == 255) //bones that have the root as parent
@@ -96,7 +77,7 @@ namespace SC2_3DS
                         .WithLocalTranslation(joint.StartPosition)
                         .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(rotate.Z, rotate.Y, rotate.X))
                         .WithLocalScale(scale);
-                    jointlist.Add(node);
+                    joint_list.Add(node);
                     node_map[joint.BoneIdx] = node;
                 }
                 else if (joint.BoneNameOffset == 0) //empty bones
@@ -106,7 +87,7 @@ namespace SC2_3DS
                         .WithLocalTranslation(joint.StartPosition)
                         .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(0, 0, 0))
                         .WithLocalScale(new Vector3(1, 1, 1));
-                    jointlist.Add(node);
+                    joint_list.Add(node);
                 }
                 else
                 {
@@ -129,122 +110,172 @@ namespace SC2_3DS
                         .WithLocalTranslation(joint.StartPosition)
                         .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(rotate.Z, rotate.Y, rotate.X))
                         .WithLocalScale(scale);
-                    jointlist.Add(node);
+                    joint_list.Add(node);
                     node_map[joint.BoneIdx] = node;
                 }
             }
-            return jointlist;
+            return joint_list;
         }
 
-        static void AddGeometrySkinned(MeshBuilder<VertexPositionNormal, VertexTexture1, VertexJoints4> mesh, VMXObject vmxobject)
+        static void AddGeometrySkinned(MeshBuilder<VertexPositionNormal, VertexColor1Texture1, VertexJoints4> mesh_skinned, VMXObject vmxobject)
         {
             var mats = CreateMaterialWithTexture(vmxobject);
-            var vertices = new List<VERTEX>();
-            int vertexIndex = 0;
+            var vertices = new List<VERTEXSKINNED>();
+            int vertex_index = 0;
             int j = 0;
-            for (int i = 0; i < vmxobject.WeightTables.VertCount1; i++, vertexIndex++, j+= 1)
+            for (int i = 0; i < vmxobject.WeightTables.VertCount1; i++, vertex_index++, j+= 1)
             {
-                vertices.Add(CreateVertex(vmxobject.Buffer2[vertexIndex], vmxobject.Buffer1[vertexIndex], vmxobject.WeightDef1Bone, j, 1));
+                vertices.Add(CreateVertex(vmxobject.Buffer2[vertex_index], vmxobject.Buffer1[vertex_index], vmxobject.WeightDef1Bone, j, 1));
             }
             j = 0;
-            for (int i = 0; i < vmxobject.WeightTables.VertCount2; i++, vertexIndex++, j += 2)
+            for (int i = 0; i < vmxobject.WeightTables.VertCount2; i++, vertex_index++, j += 2)
             {
-                vertices.Add(CreateVertex(vmxobject.Buffer2[vertexIndex], vmxobject.Buffer1[vertexIndex], vmxobject.WeightDef2Bone, j, 2));
+                vertices.Add(CreateVertex(vmxobject.Buffer2[vertex_index], vmxobject.Buffer1[vertex_index], vmxobject.WeightDef2Bone, j, 2));
             }
             j = 0;
-            for (int i = 0; i < vmxobject.WeightTables.VertCount3; i++, vertexIndex++, j += 3)
+            for (int i = 0; i < vmxobject.WeightTables.VertCount3; i++, vertex_index++, j += 3)
             {
-                vertices.Add(CreateVertex(vmxobject.Buffer2[vertexIndex], vmxobject.Buffer1[vertexIndex], vmxobject.WeightDef3Bone, j, 3));
+                vertices.Add(CreateVertex(vmxobject.Buffer2[vertex_index], vmxobject.Buffer1[vertex_index], vmxobject.WeightDef3Bone, j, 3));
             }
             j = 0;
-            for (int i = 0; i < vmxobject.WeightTables.VertCount4; i++, vertexIndex++, j += 4)
+            for (int i = 0; i < vmxobject.WeightTables.VertCount4; i++, vertex_index++, j += 4)
             {
-                vertices.Add(CreateVertex(vmxobject.Buffer2[vertexIndex], vmxobject.Buffer1[vertexIndex], vmxobject.WeightDef4Bone, j, 4));
+                vertices.Add(CreateVertex(vmxobject.Buffer2[vertex_index], vmxobject.Buffer1[vertex_index], vmxobject.WeightDef4Bone, j, 4));
             }
             j = 0;
-            for (int i = 0; i < vmxobject.Object_0.Length; i++)
+            for (int i = 0; i < vmxobject.SkinnedMeshList.Count; i++, vertex_index++)
             {
-                var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.Object_0[i].MaterialOffset);
-                var prim = mesh.UsePrimitive(mats.GetValueOrDefault(num));
-                AddTrianglesSkinned(prim, vmxobject.Object_0[i], vertices);
-            }
-            for (int i = 0; i < vmxobject.Object_1.Length; i++)
-            {
-                var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.Object_1[i].MaterialOffset);
-                var prim = mesh.UsePrimitive(mats.GetValueOrDefault(num));
-                AddTrianglesSkinned(prim, vmxobject.Object_1[i], vertices);
-            }
-            for (int i = 0; i < vmxobject.Object_2.Length; i++)
-            {
-                var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.Object_2[i].MaterialOffset);
-                var prim = mesh.UsePrimitive(mats.GetValueOrDefault(num));
-                AddTrianglesSkinned(prim, vmxobject.Object_2[i], vertices);
+                var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.SkinnedMeshList[i].MaterialOffset);
+                var prim_static = mesh_skinned.UsePrimitive(mats.GetValueOrDefault(num));
+                AddTriangles(prim_static, vmxobject.SkinnedMeshList[i], vertices);
             }
         }
 
-        static void AddTrianglesSkinned(PrimitiveBuilder<MaterialBuilder, VertexPositionNormal, VertexTexture1, VertexJoints4> prim, LayerObjectEntryXbox layerobject, List<VERTEX> verts)
+        static void AddGeometryStatic(SceneBuilder scene, VMXObject vmxobject, Dictionary<int, NodeBuilder> node_map)
         {
-        
-            if (layerobject.ObjectType == MeshXboxContent.SKINNED)
+            var mats = CreateMaterialWithTexture(vmxobject);
+            var vertices = new List<VERTEXSTATIC>();
+            int vertex_index = 0;
+            for (int i = 0; i < vmxobject.StaticMeshList.Count; i++, vertex_index++)
             {
-                var vertices = new List<Tuple<ushort, ushort, ushort>>();
-                if (layerobject.PrimitiveType == PrimitiveXbox.TRIANGLESTRIP)
-                    vertices = (TriangleStripToFaceTuple(layerobject.SkinnedMesh.Faces.Data));
-                if (layerobject.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
-                    vertices = (TriangleListToFaceTuple(layerobject.SkinnedMesh.Faces.Data));
-        
-                for (int i = 0; i < vertices.Count; i++)
+                foreach (var buffer4 in vmxobject.StaticMeshList[i].StaticMesh.Buffer4Data)
                 {
-                    prim.AddTriangle(verts[vertices[i].Item1], verts[vertices[i].Item2], verts[vertices[i].Item3]);
+                    vertices.Add(CreateVertex(buffer4));
                 }
+                var mesh_static = VERTEXSTATIC.CreateCompatibleMesh();
+                var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MaterialOffset);
+                var matrix = vmxobject.MatrixTables[vmxobject.MatrixDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MatrixOffset)];
+                //var parent_bone = node_map[matrix.ParentBoneIdx];
+                var prim_static = mesh_static.UsePrimitive(mats.GetValueOrDefault(num));
+                AddTriangles(prim_static, vmxobject.StaticMeshList[i], vertices);
+                scene.AddRigidMesh(mesh_static, matrix.Matrix);
+                vertices = new List<VERTEXSTATIC>();
             }
         }
 
-        private static VERTEX CreateVertex(Buffer2Xbox buffer2, Buffer1Xbox buffer1, WeightDefXbox[] weightDef, int j, int weightlength)
+        static void AddTriangles(PrimitiveBuilder<MaterialBuilder, VertexPositionNormal, VertexColor1Texture1, VertexJoints4> prim_skinned, LayerObjectEntryXbox layer_object, List<VERTEXSKINNED> verts)
         {
-            var w0 = SparseWeight8.Create(new Vector4(
-                                                 weightlength > 0 ? weightDef[j + 0].BoneIdx : 0,
-                                                 weightlength > 1 ? weightDef[j + 1].BoneIdx : 0,
-                                                 weightlength > 2 ? weightDef[j + 2].BoneIdx : 0,
-                                                 weightlength > 3 ? weightDef[j + 3].BoneIdx : 0), 
+            var vertices = new List<Tuple<ushort, ushort, ushort>>();
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLESTRIP)
+                vertices = (TriangleStripToFaceTuple(layer_object.SkinnedMesh.Faces.Data));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
+                vertices = (TriangleListToFaceTuple(layer_object.SkinnedMesh.Faces.Data));
+
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                prim_skinned.AddTriangle(verts[vertices[i].Item1], verts[vertices[i].Item2], verts[vertices[i].Item3]);
+            }
+        }
+
+        static void AddTriangles(PrimitiveBuilder<MaterialBuilder, VertexPositionNormal, VertexColor1Texture1, VertexEmpty> prim_static, LayerObjectEntryXbox layer_object, List<VERTEXSTATIC> verts)
+        {
+            var vertices = new List<Tuple<ushort, ushort, ushort>>();
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLESTRIP)
+                vertices = (TriangleStripToFaceTuple(layer_object.StaticMesh.Faces.Data));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
+                vertices = (TriangleListToFaceTuple(layer_object.StaticMesh.Faces.Data));
+
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                prim_static.AddTriangle(verts[vertices[i].Item1], verts[vertices[i].Item2], verts[vertices[i].Item3]);
+            }
+        }
+
+        private static VERTEXSKINNED CreateVertex(Buffer2Xbox buffer2, Buffer1Xbox buffer1, WeightDefXbox[] weight_def, int j, int weight_length)
+        {
+            var weights = SparseWeight8.Create(new Vector4(
+                                                 weight_length > 0 ? weight_def[j + 0].BoneIdx : 0,
+                                                 weight_length > 1 ? weight_def[j + 1].BoneIdx : 0,
+                                                 weight_length > 2 ? weight_def[j + 2].BoneIdx : 0,
+                                                 weight_length > 3 ? weight_def[j + 3].BoneIdx : 0), 
                                                  new Vector4(0, 0, 0, 0),
                                                  new Vector4(
-                                                 weightlength > 0 ? weightDef[j + 0].BoneWeight : 0,
-                                                 weightlength > 1 ? weightDef[j + 1].BoneWeight : 0,
-                                                 weightlength > 2 ? weightDef[j + 2].BoneWeight : 0,
-                                                 weightlength > 3 ? weightDef[j + 3].BoneWeight : 0), 
+                                                 weight_length > 0 ? weight_def[j + 0].BoneWeight : 0,
+                                                 weight_length > 1 ? weight_def[j + 1].BoneWeight : 0,
+                                                 weight_length > 2 ? weight_def[j + 2].BoneWeight : 0,
+                                                 weight_length > 3 ? weight_def[j + 3].BoneWeight : 0), 
                                                  new Vector4(0, 0, 0, 0));
-            return new VERTEX(
-                new VertexPositionNormal(buffer2.Position.X, buffer2.Position.Y, buffer2.Position.Z, buffer2.Normal.X, buffer2.Normal.Y, buffer2.Normal.Z),
-                new VertexTexture1(buffer1.TileUV),
-                new VertexJoints4((w0))
+            return new VERTEXSKINNED(
+                new VertexPositionNormal(
+                    buffer2.Position.X, 
+                    buffer2.Position.Y, 
+                    buffer2.Position.Z, 
+                    buffer2.Normal.X, 
+                    buffer2.Normal.Y, 
+                    buffer2.Normal.Z),
+                new VertexColor1Texture1(new Vector4(
+                (float)buffer1.ColorRGBA.B1 / (float)255, 
+                (float)buffer1.ColorRGBA.B2 / (float)255, 
+                (float)buffer1.ColorRGBA.B3 / (float)255,
+                (float)buffer1.ColorRGBA.B4 / (float)255), buffer1.TileUV),
+                new VertexJoints4(weights)
             );
         }
-        static Dictionary<int, MaterialBuilder> CreateMaterialWithTexture(VMXObject vmxobject)//vector4 basecolor
+
+        private static VERTEXSTATIC CreateVertex(Buffer4Xbox buffer4)
         {
-            string pngfolder = "PNG";
+            return new VERTEXSTATIC(
+                new VertexPositionNormal(
+                    buffer4.Position.X,
+                    buffer4.Position.Y,
+                    buffer4.Position.Z,
+                    buffer4.Normal.X,
+                    buffer4.Normal.Y,
+                    buffer4.Normal.Z),
+                new VertexColor1Texture1(new Vector4(
+                (float)buffer4.VertDef.ColorRGBA.B1 / (float)255,
+                (float)buffer4.VertDef.ColorRGBA.B2 / (float)255,
+                (float)buffer4.VertDef.ColorRGBA.B3 / (float)255,
+                (float)buffer4.VertDef.ColorRGBA.B4 / (float)255), buffer4.VertDef.TileUV),
+                new VertexEmpty()
+            );
+        }
+        static Dictionary<int, MaterialBuilder> CreateMaterialWithTexture(VMXObject vmxobject)
+        {
+            string png_folder = "PNG";
             var materials = new Dictionary<int, MaterialBuilder>();
             for (int i = 0; i < vmxobject.MaterialOffsets.Length; i++)
             {
                 var num = vmxobject.MaterialDictionary.GetValueOrDefault(vmxobject.MaterialOffsets[i]);
-                int texturenum = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset0);
-
-                byte[] fileBytes = File.ReadAllBytes($"{pngfolder}\\Texture{texturenum}.png");
-                var imgBuilder = ImageBuilder.From(fileBytes);
+                int texture_num = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset0);
+                bool cull = (vmxobject.MaterialTables[num].CullMode == MaterialTableCull.DRAWNBOTHSIDES);
+                byte[] file_data = File.ReadAllBytes($"{png_folder}\\Texture{texture_num}.png");
+                var image = ImageBuilder.From(file_data);
                 var material = new MaterialBuilder()
-                    .WithBaseColor(imgBuilder, vmxobject.MaterialTables[num].DiffuseRGBA);
+                    .WithDoubleSide(cull)
+                    .WithBaseColor(image, vmxobject.MaterialTables[num].DiffuseRGBA);
                 if (vmxobject.MaterialTables[num].VXTOffset1 != 0)
                 {
-                    texturenum = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset1);
-                    fileBytes = File.ReadAllBytes($"{pngfolder}\\Texture{texturenum}.png");
-                    imgBuilder = ImageBuilder.From(fileBytes);
+                    texture_num = vmxobject.TextureDictionary.GetValueOrDefault((int)vmxobject.MaterialTables[num].VXTOffset1);
+                    file_data = File.ReadAllBytes($"{png_folder}\\Texture{texture_num}.png");
+                    image = ImageBuilder.From(file_data);
                     material = material
-                        .WithChannelImage(KnownChannel.SpecularColor, imgBuilder)
+                        .WithChannelImage(KnownChannel.SpecularColor, image)
                         .WithChannelParam(KnownChannel.SpecularColor, KnownProperty.RGB, new Vector3(
                             vmxobject.MaterialTables[num].SpecularRGBA.X,
                             vmxobject.MaterialTables[num].SpecularRGBA.Y, 
                             vmxobject.MaterialTables[num].SpecularRGBA.Z))
-                        .WithChannelImage(KnownChannel.SpecularFactor, imgBuilder)
+                        .WithChannelImage(KnownChannel.SpecularFactor, image)
                         .WithChannelParam(KnownChannel.SpecularFactor, KnownProperty.SpecularFactor, vmxobject.MaterialTables[num].SpecularRGBA.W);
                 }
                 materials.Add(num, material);
