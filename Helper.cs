@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Numerics;
 using static SC2_3DS.Headers;
+using static SC2_3DS.Helper;
 using static SC2_3DS.Matrix;
 using static SC2_3DS.Objects;
 using static SC2_3DS.Textures;
@@ -1177,11 +1178,45 @@ namespace SC2_3DS
 
             return value;
         }
+        //Matrix
+
+        public static float EulerToDeg(float euler)
+        {
+            return 360.0f * euler;
+        }
+
+        public static float DegToRad(float deg)
+        {
+            return deg * (float.Pi / 180.0f);
+        }
+
+        public static float RadToDeg(float rad)
+        {
+            return 180.0f * rad / float.Pi;
+        }
+        public static SkinnedMeshXbox ObjectSkinnedXboxHelper(LayerObjectEntryXbox layer_object, MemoryStream input, BinaryReader reader)
+        {
+            layer_object.SkinnedMesh = new SkinnedMeshXbox();
+            input.Seek(layer_object.FaceOffset, SeekOrigin.Begin);
+            layer_object.SkinnedMesh.Faces = ReadFacesDataXbox(reader, (int)(layer_object.FaceCount));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLESTRIP)
+                layer_object.SkinnedMesh.Indicies = (TriangleStripToFaceTuple(layer_object.SkinnedMesh.Faces.Data));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
+                layer_object.SkinnedMesh.Indicies = (TriangleListToFaceTuple(layer_object.SkinnedMesh.Faces.Data));
+
+            return layer_object.SkinnedMesh;
+        }
+
         public static StaticMeshXbox ObjectStaticXboxHelper(LayerObjectEntryXbox layer_object, MemoryStream input, BinaryReader reader)
         {
             layer_object.StaticMesh = new StaticMeshXbox();
             input.Seek(layer_object.FaceOffset, SeekOrigin.Begin);
             layer_object.StaticMesh.Faces = ReadFacesDataXbox(reader, (int)(layer_object.FaceCount));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLESTRIP)
+                layer_object.StaticMesh.Indicies = (TriangleStripToFaceTuple(layer_object.StaticMesh.Faces.Data));
+            if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
+                layer_object.StaticMesh.Indicies = (TriangleListToFaceTuple(layer_object.StaticMesh.Faces.Data));
+
             int[] TempVert = ReadVertXbox((int)layer_object.FaceCount, layer_object.StaticMesh.Faces, 9001, 0);
             input.Seek(layer_object.Buffer4Offset, SeekOrigin.Begin);
             layer_object.StaticMesh.Buffer4Data = new Buffer4Xbox[TempVert[0]];

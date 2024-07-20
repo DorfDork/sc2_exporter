@@ -86,6 +86,7 @@ namespace SC2_3DS
         public struct StaticMeshXbox
         {
             public FacesData Faces;
+            public List<Tuple<ushort, ushort, ushort>> Indicies;
             public Buffer4Xbox[] Buffer4Data;
             public Vector4 CenterRadius;
         }
@@ -100,6 +101,7 @@ namespace SC2_3DS
         public struct SkinnedMeshXbox
         {
             public FacesData Faces;
+            public List<Tuple<ushort, ushort, ushort>> Indicies;
         }
 
         public static SkinnedMeshXbox ReadSkinnedMeshXbox(BinaryReader reader, int size)

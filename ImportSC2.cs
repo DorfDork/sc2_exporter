@@ -162,9 +162,7 @@ namespace SC2_3DS
                 vmxobject.Object_0[i] = ReadLayerObjectEntryXbox(reader);
                 if (vmxobject.Object_0[i].ObjectType == MeshXboxContent.SKINNED)
                 {
-                    vmxobject.Object_0[i].SkinnedMesh = new SkinnedMeshXbox();
-                    input.Seek(vmxobject.Object_0[i].FaceOffset, SeekOrigin.Begin);
-                    vmxobject.Object_0[i].SkinnedMesh.Faces = ReadFacesDataXbox(reader, (int)(vmxobject.Object_0[i].FaceCount));
+                    vmxobject.Object_0[i].SkinnedMesh = ObjectSkinnedXboxHelper(vmxobject.Object_0[i], input, reader);
                     TempVertSkinned = ReadVertXbox((int)vmxobject.Object_0[i].FaceCount, vmxobject.Object_0[i].SkinnedMesh.Faces, TempVertSkinned[1], TempVertSkinned[2]);
                     if (skinned_bool == false)
                     {
@@ -185,9 +183,7 @@ namespace SC2_3DS
                 vmxobject.Object_1[i] = ReadLayerObjectEntryXbox(reader);
                 if (vmxobject.Object_1[i].ObjectType == MeshXboxContent.SKINNED)
                 {
-                    vmxobject.Object_1[i].SkinnedMesh = new SkinnedMeshXbox();
-                    input.Seek(vmxobject.Object_1[i].FaceOffset, SeekOrigin.Begin);
-                    vmxobject.Object_1[i].SkinnedMesh.Faces = ReadFacesDataXbox(reader, (int)(vmxobject.Object_1[i].FaceCount));
+                    vmxobject.Object_1[i].SkinnedMesh = ObjectSkinnedXboxHelper(vmxobject.Object_1[i], input, reader);
                     TempVertSkinned = ReadVertXbox((int)vmxobject.Object_1[i].FaceCount, vmxobject.Object_1[i].SkinnedMesh.Faces, TempVertSkinned[1], TempVertSkinned[2]);
                     if (skinned_bool == false)
                     {
@@ -208,9 +204,7 @@ namespace SC2_3DS
                 vmxobject.Object_2[i] = ReadLayerObjectEntryXbox(reader);
                 if (vmxobject.Object_2[i].ObjectType == MeshXboxContent.SKINNED)
                 {
-                    vmxobject.Object_2[i].SkinnedMesh = new SkinnedMeshXbox();
-                    input.Seek(vmxobject.Object_2[i].FaceOffset, SeekOrigin.Begin);
-                    vmxobject.Object_2[i].SkinnedMesh.Faces = ReadFacesDataXbox(reader, (int)(vmxobject.Object_2[i].FaceCount));
+                    vmxobject.Object_2[i].SkinnedMesh = ObjectSkinnedXboxHelper(vmxobject.Object_2[i], input, reader);
                     TempVertSkinned = ReadVertXbox((int)vmxobject.Object_2[i].FaceCount, vmxobject.Object_2[i].SkinnedMesh.Faces, TempVertSkinned[1], TempVertSkinned[2]);
                     if (skinned_bool == false)
                     {
