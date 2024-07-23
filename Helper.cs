@@ -351,17 +351,15 @@ namespace SC2_3DS
             return str;
         }
 
-        public static int[] ReadVertXbox(int size, FacesData data, int TempVertMin, int TempVertMax)
+        public static Vector3 ReadVertXbox(int size, FacesData data, int TempVertMin, int TempVertMax)
         {
-            int[] TempVert = new int[3];
+            Vector3 TempVert = new Vector3();
             for (int j = 0; j < size; j++)
             {
                 if (data.Data[j] > TempVertMax) TempVertMax = data.Data[j];
                 if (data.Data[j] < TempVertMin) TempVertMin = data.Data[j];
             }
-            TempVert[0] = TempVertMax - TempVertMin + 1;
-            TempVert[1] = TempVertMin;
-            TempVert[2] = TempVertMax;
+            TempVert = new Vector3(TempVertMax - TempVertMin + 1, TempVertMin, TempVertMax);
             return TempVert;
         }
 
@@ -1217,9 +1215,9 @@ namespace SC2_3DS
             if (layer_object.PrimitiveType == PrimitiveXbox.TRIANGLELIST)
                 layer_object.StaticMesh.Indicies = (TriangleListToFaceTuple(layer_object.StaticMesh.Faces.Data));
 
-            int[] TempVert = ReadVertXbox((int)layer_object.FaceCount, layer_object.StaticMesh.Faces, 9001, 0);
+            Vector3 TempVert = ReadVertXbox((int)layer_object.FaceCount, layer_object.StaticMesh.Faces, int.MaxValue, int.MinValue);
             input.Seek(layer_object.Buffer4Offset, SeekOrigin.Begin);
-            layer_object.StaticMesh.Buffer4Data = new Buffer4Xbox[TempVert[0]];
+            layer_object.StaticMesh.Buffer4Data = new Buffer4Xbox[(int)TempVert.X];
             for (int j = 0; j < TempVert[0]; j++)
                 layer_object.StaticMesh.Buffer4Data[j] = ReadBuffer4Xbox(reader);
 

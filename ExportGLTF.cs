@@ -16,7 +16,7 @@ using System.Collections.Generic; // For List
 namespace SC2_3DS
 {
     using VERTEXSKINNED = VertexBuilder<VertexPositionNormal, VertexColor1Texture1, VertexJoints4>;
-    using VERTEXSTATIC = VertexBuilder<VertexPositionNormal, VertexColor1Texture1, VertexEmpty>;
+    using VERTEXSTATIC = VertexBuilder<VertexPositionNormal, VertexColor1Texture1, VertexJoints4>;
 
     internal class ExportGLTF
     {
@@ -26,15 +26,15 @@ namespace SC2_3DS
             var root = new NodeBuilder()
                 .WithLocalTranslation(new Vector3())
                 .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(
-                    DegToRad(EulerToDeg(-0.25f)),
+                    DegToRad(180),
                     0,
-                    DegToRad(EulerToDeg(0.25f))))
+                    DegToRad(90)))
                 .WithLocalScale(new Vector3(1, 1, 1));
 
             Dictionary<int, NodeBuilder> node_map = new Dictionary<int, NodeBuilder>();
             var joint_list = CreateSkeleton(vmxobject, root, node_map);
             AddGeometrySkinned(scene, vmxobject, node_map, joint_list);
-            AddGeometryStatic(scene, vmxobject, node_map);
+            AddGeometryStatic(scene, vmxobject, node_map, joint_list);
 
             var model = scene.ToGltf2();
             var settings = new WriteSettings
@@ -75,7 +75,7 @@ namespace SC2_3DS
                 {
                     var scale = new Vector3(joint.StartPositionScale, joint.StartPositionScale, joint.StartPositionScale);
                     var node = root.CreateNode(joint.Name)
-                        .WithLocalTranslation(new Vector3(joint.StartPosition.X, joint.StartPosition.Z, joint.StartPosition.Y))
+                        .WithLocalTranslation(new Vector3(joint.StartPosition.Y, joint.StartPosition.Z, joint.StartPosition.X))
                         .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(
                             DegToRad(EulerToDeg(joint.Rotation.Z)),
                             DegToRad(EulerToDeg(joint.Rotation.Y)),
@@ -95,23 +95,9 @@ namespace SC2_3DS
                 }
                 else
                 {
-                    var parent = node_map[joint.BoneParentIdx]; //any child bone
-                    //var rotate = (joint.Rotation * 360) * (float.Pi / 180);
-                    //if (joint.Ukn3 == 3) 
-                    //{  
-                    //    rotate += (joint.Ukn1 * 360) * (float.Pi / 180); 
-                    //}
-                    //if (joint.Ukn3 == 7)
-                    //{
-                    //    var transform1 = Matrix4x4.Identity;
-                    //    var transform2 = Matrix4x4.Identity;
-                    //    var transform3 = Matrix4x4.Identity;
-                    //
-                    //    rotate += (joint.Ukn1 * 360) * (float.Pi / 180);
-                    //}
+                    var parent = node_map[joint.BoneParentIdx];
                     var scale = new Vector3(joint.StartPositionScale, joint.StartPositionScale, joint.StartPositionScale);
                     var node = parent.CreateNode(joint.Name)
-                        //.WithLocalTranslation(joint.StartPosition)
                         .WithLocalTranslation(new Vector3(joint.StartPosition.Y, joint.StartPosition.Z, joint.StartPosition.X))
                         .WithLocalRotation(Quaternion.CreateFromYawPitchRoll(
                             DegToRad(EulerToDeg(joint.Rotation.Z)),
@@ -151,40 +137,23 @@ namespace SC2_3DS
                 vertices.Add(CreateVertex(vmxobject.Buffer2[vertex_index], vmxobject.Buffer1[vertex_index], vmxobject.WeightDef4Bone, j, 4));
             }
             j = 0;
+
+            Vector3 centroid = new Vector3(0, 1.15f, 0); //to correct mesh to center
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                var vertex = vertices[i];
+                vertex.Position -= centroid;
+                vertices[i] = vertex;
+            }
+
             for (int i = 0; i < vmxobject.SkinnedMeshList.Count; i++, vertex_index++)
             {
                 var mesh_skinned = VERTEXSKINNED.CreateCompatibleMesh();
                 var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.SkinnedMeshList[i].MaterialOffset);
                 var matrix = vmxobject.MatrixTables[vmxobject.MatrixDictionary.GetValueOrDefault((int)vmxobject.SkinnedMeshList[i].MatrixOffset)];
-                var parent_bone_matrix = node_map[matrix.ParentBoneIdx].WorldMatrix;
                 var prim_skinned = mesh_skinned.UsePrimitive(mats.GetValueOrDefault(num));
+                var uniqueVertices = new HashSet<int>();
 
-                // Calculate the bounding box and centroid for the current mesh piece
-                Vector3 min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-                Vector3 max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
-
-               foreach (var vertIndex in vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies)
-               {
-                   UpdateBoundingBox(ref min, ref max, vertices[vertIndex.Item1].Position);
-                   UpdateBoundingBox(ref min, ref max, vertices[vertIndex.Item2].Position);
-                   UpdateBoundingBox(ref min, ref max, vertices[vertIndex.Item3].Position);
-               }
-                //Vector3 centroid = (min + max) / 2;
-                //// Offset vertices of the current mesh piece
-                //foreach (var vertIndex in vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies)
-                //{
-                //    var vertex = vertices[vertIndex.Item1];
-                //    vertex.Position -= centroid;
-                //    vertices[vertIndex.Item1] = vertex;
-                //
-                //    vertex = vertices[vertIndex.Item2];
-                //    vertex.Position -= centroid;
-                //    vertices[vertIndex.Item2] = vertex;
-                //
-                //    vertex = vertices[vertIndex.Item3];
-                //    vertex.Position -= centroid;
-                //    vertices[vertIndex.Item3] = vertex;
-                //}
                 for (int k = 0; k < vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies.Count; k++)
                 {
                     prim_skinned.AddTriangle(
@@ -195,36 +164,22 @@ namespace SC2_3DS
                 scene.AddSkinnedMesh(mesh_skinned, matrix.Matrix, joint_list.ToArray());
             }
         }
-        static void UpdateBoundingBox(ref Vector3 min, ref Vector3 max, Vector3 position)
-        {
-            if (position.X < min.X) min.X = position.X;
-            if (position.Y < min.Y) min.Y = position.Y;
-            if (position.Z < min.Z) min.Z = position.Z;
 
-            if (position.X > max.X) max.X = position.X;
-            if (position.Y > max.Y) max.Y = position.Y;
-            if (position.Z > max.Z) max.Z = position.Z;
-        }
-
-        static void AddGeometryStatic(SceneBuilder scene, VMXObject vmxobject, Dictionary<int, NodeBuilder> node_map)
+        static void AddGeometryStatic(SceneBuilder scene, VMXObject vmxobject, Dictionary<int, NodeBuilder> node_map, List<NodeBuilder> joint_list)
         {
             var mats = CreateMaterialWithTexture(vmxobject);
             var vertices = new List<VERTEXSTATIC>();
-            int vertex_index = 0;
-            for (int i = 0; i < vmxobject.StaticMeshList.Count; i++, vertex_index++)
+            for (int i = 0; i < vmxobject.StaticMeshList.Count; i++)
             {
+                var matrix = vmxobject.MatrixTables[vmxobject.MatrixDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MatrixOffset)];
                 foreach (var buffer4 in vmxobject.StaticMeshList[i].StaticMesh.Buffer4Data)
                 {
-                    vertices.Add(CreateVertex(buffer4));
+                    vertices.Add(CreateVertex(buffer4, matrix.ParentBoneIdx));
                 }
                 var mesh_static = VERTEXSTATIC.CreateCompatibleMesh();
                 var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MaterialOffset);
-                var matrix = vmxobject.MatrixTables[vmxobject.MatrixDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MatrixOffset)];
-                var parent_bone_matrix = node_map[matrix.ParentBoneIdx].WorldMatrix;
-                //parent_bone_matrix.M41 += vmxobject.StaticMeshList[i].StaticMesh.CenterRadius.X;
-                //parent_bone_matrix.M42 += vmxobject.StaticMeshList[i].StaticMesh.CenterRadius.Y;
-                //parent_bone_matrix.M43 += vmxobject.StaticMeshList[i].StaticMesh.CenterRadius.Z;
                 var prim_static = mesh_static.UsePrimitive(mats.GetValueOrDefault(num));
+                matrix.Matrix.Translation = node_map[matrix.ParentBoneIdx].WorldMatrix.Translation;// have to change the matrix translation to bone translation?
                 for (int k = 0; k < vmxobject.StaticMeshList[i].StaticMesh.Indicies.Count; k++)
                 {
                     prim_static.AddTriangle(
@@ -232,7 +187,7 @@ namespace SC2_3DS
                         vertices[vmxobject.StaticMeshList[i].StaticMesh.Indicies[k].Item2],
                         vertices[vmxobject.StaticMeshList[i].StaticMesh.Indicies[k].Item3]);
                 }
-                scene.AddRigidMesh(mesh_static, parent_bone_matrix);
+                scene.AddSkinnedMesh(mesh_static, matrix.Matrix, joint_list.ToArray());
                 vertices = new List<VERTEXSTATIC>();
             }
         }
@@ -268,8 +223,16 @@ namespace SC2_3DS
             );
         }
 
-        private static VERTEXSTATIC CreateVertex(Buffer4Xbox buffer4)
+        private static VERTEXSTATIC CreateVertex(Buffer4Xbox buffer4, byte bone_idx)
         {
+            var weights = SparseWeight8.Create(new Vector4(
+                                                 bone_idx,
+                                                 0,0,0),
+                                                 new Vector4(0, 0, 0, 0),
+                                                 new Vector4(
+                                                 1,
+                                                 0,0,0),
+                                                 new Vector4(0, 0, 0, 0));
             return new VERTEXSTATIC(
                 new VertexPositionNormal(
                     buffer4.Position.X,
@@ -283,7 +246,7 @@ namespace SC2_3DS
                 (float)buffer4.VertDef.ColorRGBA.B2 / (float)255,
                 (float)buffer4.VertDef.ColorRGBA.B3 / (float)255,
                 (float)buffer4.VertDef.ColorRGBA.B4 / (float)255), buffer4.VertDef.TileUV),
-                new VertexEmpty()
+                new VertexJoints4(weights)
             );
         }
         static Dictionary<int, MaterialBuilder> CreateMaterialWithTexture(VMXObject vmxobject)

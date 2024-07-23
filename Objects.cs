@@ -154,6 +154,8 @@ namespace SC2_3DS
             public uint Buffer2Offset;
             public uint Buffer3Offset;
             public uint Buffer4Offset;
+            //Center+Radius Offset. The value maybe zero when object type equal to four(skinned mesh). besides, the offset address are alway followed the main vertex buffer,
+            //it maybe use to calculate the size of vertex buffer of static mesh. ie. VertexBufferSize = CenterRadius
             public uint CenterRadiusOffset; // "Aman" describes this section as "Center+Radius Offset"
             public StaticMeshXbox StaticMesh;
             public SkinnedMeshXbox SkinnedMesh;
