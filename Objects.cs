@@ -91,12 +91,6 @@ namespace SC2_3DS
             public Vector4 CenterRadius;
         }
 
-        public static StaticMeshXbox ReadStaticMeshXbox(BinaryReader reader)
-        {
-            StaticMeshXbox value = new StaticMeshXbox();
-            return value;
-        }
-
         //vmxGeometrySkinned (position,Normal,colour,texture,weight,boneid,faces,matids)
         public struct SkinnedMeshXbox
         {

@@ -319,28 +319,30 @@ namespace SC2_3DS
             Array.Reverse(data);
             return BitConverter.ToInt32(data, 0);
         }
+
         public static Half ReadHalfL(BinaryReader reader)
         {
             return reader.ReadHalf();
         }
+
         public static Half ReadHalfB(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToHalf(data, 0);
         }
+
         public static float ReadSingleL(BinaryReader reader)
         {
             return reader.ReadSingle();
         }
+
         public static float ReadSingleB(BinaryReader reader)
         {
             var data = reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToSingle(data, 0);
         }
-
-
 
         public static string ReadNullTerminatedString(BinaryReader reader)
         {
@@ -356,8 +358,11 @@ namespace SC2_3DS
             Vector3 TempVert = new Vector3();
             for (int j = 0; j < size; j++)
             {
-                if (data.Data[j] > TempVertMax) TempVertMax = data.Data[j];
-                if (data.Data[j] < TempVertMin) TempVertMin = data.Data[j];
+                if (data.Data[j] != 0xFFFF)
+                {
+                    if (data.Data[j] > TempVertMax) TempVertMax = data.Data[j];
+                    if (data.Data[j] < TempVertMin) TempVertMin = data.Data[j];
+                }
             }
             TempVert = new Vector3(TempVertMax - TempVertMin + 1, TempVertMin, TempVertMax);
             return TempVert;
@@ -1086,55 +1091,39 @@ namespace SC2_3DS
         }
 
         //Model Xbox
-        public static List<Tuple<ushort, ushort, ushort>> TriangleStripToFaceTuple(ushort[] strip)
+        public static List<Tuple<ushort, ushort, ushort>> TriangleStripToFaceTuple(ushort[] tri_data)
         {
             var faces = new List<Tuple<ushort, ushort, ushort>>();
-            int StartDirection = -1;
-            int faceDirection = StartDirection;
-
-            ushort fa = strip[0];
-            ushort fb = strip[1];
-            ushort fc;
-
-            for (int i = 2; i < strip.Length; i++)
+            ushort tri_a, tri_b, tri_c;
+            for (int i = 0; i < tri_data.Length - 2; i++)
             {
-                fc = strip[i];
-                if (fc == 0xFFFF)
+                tri_a = tri_data[i];
+                tri_b = tri_data[i + 1];
+                tri_c = tri_data[i + 2];
+                if ((tri_a != tri_b && tri_b != tri_c && tri_c != tri_a) && (tri_a != 0xFFFF && tri_b != 0xFFFF && tri_c != 0xFFFF))
                 {
-                    // Handle end-of-strip marker
-                    i++;
-                    if (i < strip.Length)
-                    {
-                        fa = strip[i];
-                        i++;
-                        if (i < strip.Length)
-                        {
-                            fb = strip[i];
-                        }
-                    }
-                    faceDirection = StartDirection;
-                }
-                else
-                {
-                    faceDirection *= -1;
-                    if (fa != fb && fb != fc && fc != fa)
-                    {
-                        if (faceDirection > 0)
-                            faces.Add(Tuple.Create((ushort)fa, (ushort)fb, (ushort)fc));
-                        else
-                            faces.Add(Tuple.Create((ushort)fa, (ushort)fc, (ushort)fb));
-                    }
-                    fa = fb;
-                    fb = fc;
+                    if (i % 2 == 0)
+                        faces.Add(Tuple.Create(tri_a, tri_b, tri_c));
+                    else
+                        faces.Add(Tuple.Create(tri_a, tri_c, tri_b));
                 }
             }
             return faces;
         }
-        public static List<Tuple<ushort, ushort, ushort>> TriangleListToFaceTuple(ushort[] strip)
+        public static List<Tuple<ushort, ushort, ushort>> TriangleListToFaceTuple(ushort[] tri_data)
         {
             var faces = new List<Tuple<ushort, ushort, ushort>>();
-            for (int i = 0; i < strip.Length; i += 3)
-                faces.Add(Tuple.Create((ushort)strip[i], (ushort)strip[i + 1], (ushort)strip[i + 2])); // fa fb fc
+            ushort tri_a, tri_b, tri_c;
+            for (int i = 0; i < tri_data.Length; i += 3)
+            {
+                tri_a = tri_data[i];
+                tri_b = tri_data[i + 1];
+                tri_c = tri_data[i + 2];
+                if ((tri_a != tri_b && tri_b != tri_c && tri_c != tri_a) && (tri_a != 0xFFFF && tri_b != 0xFFFF && tri_c != 0xFFFF))
+                {
+                    faces.Add(Tuple.Create(tri_a, tri_b, tri_c));
+                }
+            }
             return faces;
         }
         public static void IndiceDataIndexGCN(BinaryReader reader, MemoryStream input, VMGObject vmgobject, LayerObjectEntryGCN mesh)
@@ -1216,7 +1205,11 @@ namespace SC2_3DS
                 layer_object.StaticMesh.Indicies = (TriangleListToFaceTuple(layer_object.StaticMesh.Faces.Data));
 
             Vector3 TempVert = ReadVertXbox((int)layer_object.FaceCount, layer_object.StaticMesh.Faces, int.MaxValue, int.MinValue);
-            input.Seek(layer_object.Buffer4Offset, SeekOrigin.Begin);
+            if (layer_object.Buffer1Offset != layer_object.Buffer4Offset)
+                input.Seek(layer_object.Buffer1Offset, SeekOrigin.Begin);
+            else
+                input.Seek(layer_object.Buffer4Offset, SeekOrigin.Begin);
+
             layer_object.StaticMesh.Buffer4Data = new Buffer4Xbox[(int)TempVert.X];
             for (int j = 0; j < TempVert[0]; j++)
                 layer_object.StaticMesh.Buffer4Data[j] = ReadBuffer4Xbox(reader);
@@ -1297,7 +1290,6 @@ namespace SC2_3DS
             //public Buffer2GCN[] Buffer2;
             //public Buffer2GCN[] Buffer3;
             public LayerObjectEntryGCN SkinnedData;
-
         }
     }
 }

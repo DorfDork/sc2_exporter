@@ -157,8 +157,8 @@ namespace SC2_3DS
                 for (int k = 0; k < vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies.Count; k++)
                 {
                     prim_skinned.AddTriangle(
-                        vertices[vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies[k].Item1], 
-                        vertices[vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies[k].Item2], 
+                        vertices[vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies[k].Item1],
+                        vertices[vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies[k].Item2],
                         vertices[vmxobject.SkinnedMeshList[i].SkinnedMesh.Indicies[k].Item3]);
                 }
                 scene.AddSkinnedMesh(mesh_skinned, matrix.Matrix, joint_list.ToArray());
@@ -180,6 +180,7 @@ namespace SC2_3DS
                 var num = vmxobject.MaterialDictionary.GetValueOrDefault((int)vmxobject.StaticMeshList[i].MaterialOffset);
                 var prim_static = mesh_static.UsePrimitive(mats.GetValueOrDefault(num));
                 matrix.Matrix.Translation = node_map[matrix.ParentBoneIdx].WorldMatrix.Translation;// have to change the matrix translation to bone translation?
+
                 for (int k = 0; k < vmxobject.StaticMeshList[i].StaticMesh.Indicies.Count; k++)
                 {
                     prim_static.AddTriangle(
@@ -187,6 +188,7 @@ namespace SC2_3DS
                         vertices[vmxobject.StaticMeshList[i].StaticMesh.Indicies[k].Item2],
                         vertices[vmxobject.StaticMeshList[i].StaticMesh.Indicies[k].Item3]);
                 }
+                //scene.AddRigidMesh(mesh_static, matrix.Matrix);
                 scene.AddSkinnedMesh(mesh_static, matrix.Matrix, joint_list.ToArray());
                 vertices = new List<VERTEXSTATIC>();
             }
